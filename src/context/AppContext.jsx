@@ -1,117 +1,148 @@
 import { createContext, useState, useEffect } from "react";
 
-// Initialize the global broadcast tracking context network channel
 export const AppContext = createContext();
 
 export function AppProvider({ children }) {
   // ---------------------------------------------------------
-  // 1. INITIAL PARAMETER LIFECYCLE INITIALIZATION CLOSURES
+  // 1. STATE INITIALIZATION CLOSURES
   // ---------------------------------------------------------
-  
-  // Reads historical settings from the browser hardware storage to prevent state wipe on reload
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("theme") || "light";
-  });
-
-  const [bookmarks, setBookmarks] = useState(() => {
-    const savedBookmarks = localStorage.getItem("bookmarks");
-    return savedBookmarks ? JSON.parse(savedBookmarks) : [];
-  });
-
-  const [currentUser, setCurrentUser] = useState(() => {
-    const savedUser = localStorage.getItem("currentUser");
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-
-  const [loginHistory, setLoginHistory] = useState(() => {
-    const savedHistory = localStorage.getItem("loginHistory");
-    return savedHistory ? JSON.parse(savedHistory) : [];
-  });
+  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
+  const [bookmarks, setBookmarks] = useState(() => JSON.parse(localStorage.getItem("bookmarks")) || []);
+  const [currentUser, setCurrentUser] = useState(() => JSON.parse(localStorage.getItem("currentUser")) || null);
+  const [loginHistory, setLoginHistory] = useState(() => JSON.parse(localStorage.getItem("loginHistory")) || []);
+  const [authToken, setAuthToken] = useState(() => localStorage.getItem("authToken") || null);
 
   // ---------------------------------------------------------
-  // 2. HARDWARE PERSISTENCE SYNCHRONIZATION EFFICIENCY WATCHERS
+  // 2. STORAGE SYNCHRONIZATION EFFECT WATCHERS
   // ---------------------------------------------------------
-
-  // Monitors and updates system theme classes across HTML nodes
   useEffect(() => {
     localStorage.setItem("theme", theme);
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    document.documentElement.className = theme;
   }, [theme]);
 
-  // Syncs article bookmark modifications directly into machine memory
   useEffect(() => {
     localStorage.setItem("bookmarks", JSON.stringify(bookmarks));
   }, [bookmarks]);
 
-  // Locks active profile authentication tokens locally
   useEffect(() => {
     localStorage.setItem("currentUser", JSON.stringify(currentUser));
-  }, [currentUser]);
-
-  // Keeps cumulative local terminal access registration logs secure
-  useEffect(() => {
     localStorage.setItem("loginHistory", JSON.stringify(loginHistory));
-  }, [loginHistory]);
+  }, [currentUser, loginHistory]);
+
+  useEffect(() => {
+    if (authToken) {
+      localStorage.setItem("authToken", authToken);
+    } else {
+      localStorage.removeItem("authToken");
+    }
+  }, [authToken]);
 
   // ---------------------------------------------------------
-  // 3. GLOBAL CORE INTERACTION LOGIC UTILITIES
+  // 3. AUTHENTICATION & CORE CRYPTO ENGINES
   // ---------------------------------------------------------
+  const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light");
 
-  // Switch dark/light modes smoothly
-  const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"));
-  };
-
-  // Toggles article preservation maps in your tracking context array
   const toggleBookmark = (article) => {
-    setBookmarks((prevBookmarks) => {
-      const isBookmarked = prevBookmarks.some((item) => item.url === article.url);
-      if (isBookmarked) {
-        return prevBookmarks.filter((item) => item.url !== article.url);
-      } else {
-        return [...prevBookmarks, article];
-      }
-    });
+    setBookmarks((prev) => 
+      prev.some((item) => item.url === article.url) 
+        ? prev.filter((item) => item.url !== article.url) 
+        : [...prev, article]
+    );
   };
 
-  // Authenticates credentials inputs and pushes profiles into the history array matrix
+  // JWT TOKENS SIGNER MOCK INTERACTION NODE
+  const generateMockJWT = (payload) => {
+    const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+    const data = btoa(JSON.stringify({ ...payload, exp: Math.floor(Date.now() / 1000) + 3600 }));
+    const signature = btoa("newsui_secure_secret_signature_hash");
+    return `${header}.${data}.${signature}`;
+  };
+
+  // JWT TOKENS PARSER DECODER
+  const decodeMockJWT = (token) => {
+    try {
+      if (!token) return null;
+      const base64Url = token.split(".")[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      return JSON.parse(window.atob(base64));
+    } catch (e) {
+      return null;
+    }
+  };
+
+  // PROCESS LOGIN FORM CREDENTIALS MATRIX DATA WITH SMART PASSWORD VERIFICATION
   const handleLogin = (userData) => {
-    const newRecord = {
-      name: userData.name,
-      contactNo: userData.contactNo,
-      email: userData.email,
-      country: userData.country,
-      timestamp: new Date().toLocaleString(), // Captures the exact moment they log in
-      id: Date.now() // Unique tracking ID using epoch timestamp milliseconds
+    const userEmail = userData.email.toLowerCase().trim();
+    
+    // 🛡️ PASSWORD SECURITY SHIELD WITH BLANK-PASSWORD FAILSAFE
+    // Checks for any pre-existing records matching the email address
+    const existingAccount = loginHistory.find(
+      (account) => account.email.toLowerCase().trim() === userEmail
+    );
+
+    if (existingAccount) {
+      // Only enforce password matching if the record has an existing password saved
+      if (existingAccount.password && existingAccount.password !== userData.password) {
+        alert("🛑 Authentication Failed: Incorrect password for this account node.");
+        throw new Error("Auth failed: Invalid password string entry."); 
+      }
+    }
+
+    // Determine if the input email matches your master administrative account address
+    const isOwner = userEmail === "bavariamonika06@gmail.com";
+
+    const tokenPayload = {
+      name: userData.name || (existingAccount ? existingAccount.name : "User"),
+      email: userEmail,
+      role: isOwner ? "admin" : "subscriber"
     };
 
+    const issuedToken = generateMockJWT(tokenPayload);
+    
+    const newRecord = {
+      ...userData,
+      name: userData.name || (existingAccount ? existingAccount.name : "User"),
+      country: userData.country || (existingAccount ? existingAccount.country : "India"),
+      description: userData.description || (existingAccount ? existingAccount.description : ""),
+      isAdmin: isOwner,
+      token: issuedToken,
+      timestamp: new Date().toLocaleString(),
+      id: Date.now()
+    };
+
+    // Commit parameters to the local state management layer
     setCurrentUser(newRecord);
-    setLoginHistory((prevHistory) => [newRecord, ...prevHistory]); // Spreads new record right to the top of the feed
+    setAuthToken(issuedToken); 
+    
+    // Update structural log arrays cleanly
+    if (!existingAccount) {
+      // If it's a completely new account, add it straight to your historical logs
+      setLoginHistory((prev) => [newRecord, ...prev]);
+    } else {
+      // If it's an existing profile updating a passwordless account, modify the existing item row
+      setLoginHistory((prev) => 
+        prev.map((acc) => acc.email.toLowerCase().trim() === userEmail ? { ...acc, password: userData.password } : acc)
+      );
+    }
   };
 
-  // Disconnects active session tokens without clearing history logs
   const handleLogout = () => {
     setCurrentUser(null);
+    setAuthToken(null);
   };
 
-  // ---------------------------------------------------------
-  // 4. ENGINE BROADCASH EMISSION INJECTION EXPORT
-  // ---------------------------------------------------------
+  // COMPUTE DYNAMIC ACCESS RIGHTS CHECKS
+  const decodedToken = decodeMockJWT(authToken);
+  const isAdminAuthenticated = decodedToken && decodedToken.role === "admin";
+
   return (
     <AppContext.Provider
       value={{
-        theme,
-        toggleTheme,
-        bookmarks,
-        toggleBookmark,
-        currentUser,
-        loginHistory,
-        handleLogin,
-        handleLogout
+        theme, toggleTheme,
+        bookmarks, toggleBookmark,
+        currentUser, loginHistory, setLoginHistory, // Fully exported for live query submissions
+        authToken, isAdminAuthenticated,
+        handleLogin, handleLogout
       }}
     >
       {children}

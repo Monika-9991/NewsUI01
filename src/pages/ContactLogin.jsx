@@ -1,107 +1,107 @@
-import { useState, useContext } from "react";
+import { useContext, useState } from "react";
 import { AppContext } from "../context/AppContext";
-import CategoryTabs from "../components/CategoryTabs";
 import Footer from "../components/Footer";
 
 export default function ContactLogin() {
-  const { currentUser, loginHistory, handleLogin, handleLogout } = useContext(AppContext);
-  
-  const [formData, setFormData] = useState({
-    name: "",
-    contactNo: "",
-    email: "",
-    country: ""
-  });
+  const { currentUser, handleLogout, loginHistory, setLoginHistory } = useContext(AppContext);
+  const [userQuery, setUserQuery] = useState("");
+  const [successMessage, setSuccessMessage] = useState(false);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = (e) => {
+  // Submits the new query message directly into the Admin Database Logs
+  const handleQuerySubmit = (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.contactNo || !formData.email || !formData.country) {
-      alert("Please fill in all mandatory profile fields.");
+    if (!userQuery.trim()) {
+      alert("Please enter a valid query string before submitting.");
       return;
     }
-    handleLogin(formData);
-    setFormData({ name: "", contactNo: "", email: "", country: "" });
+
+    // Construct a new history row entry using the current user's data payload
+    const newQueryLog = {
+      id: Date.now(),
+      name: currentUser.name,
+      contactNo: currentUser.contactNo,
+      email: currentUser.email,
+      country: currentUser.country,
+      description: userQuery, // Injecting the fresh query message text
+      timestamp: new Date().toLocaleString()
+    };
+
+    // Push the query directly up into the global Admin database stream array
+    const updatedHistory = [newQueryLog, ...loginHistory];
+    setLoginHistory(updatedHistory);
+    localStorage.setItem("loginHistory", JSON.stringify(updatedHistory));
+
+    // Clear form UI states
+    setUserQuery("");
+    setSuccessMessage(true);
+    setTimeout(() => setSuccessMessage(false), 4000);
   };
 
   return (
     <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors">
-      <div>
-        <CategoryTabs />
+      <div className="max-w-xl mx-auto w-full flex-1 flex items-center justify-center py-12 px-4">
         
-        <main className="max-w-4xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-          
-          {/* LEFT: Contact & Verification Submission Form */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-sm">
-            <h2 className="text-xl font-black mb-1 uppercase tracking-tight">📬 Contact Desk & Access Portal</h2>
-            <p className="text-xs text-slate-400 mb-6 font-medium">Register your parameters to unlock live bulletins tracking.</p>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-md w-full relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-600 to-indigo-600" />
 
-            {currentUser ? (
-              <div className="text-center py-6 animate-fadeIn">
-                <div className="h-16 w-16 bg-blue-100 dark:bg-blue-950 text-blue-600 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-3">
-                  {currentUser.name.charAt(0).toUpperCase()}
-                </div>
-                <h3 className="text-sm font-bold">Welcome back, {currentUser.name}!</h3>
-                <p className="text-xs text-slate-400 mb-6">{currentUser.email} • {currentUser.country}</p>
-                <button 
-                  onClick={handleLogout}
-                  className="w-full bg-red-500 hover:bg-red-600 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-all shadow-sm"
-                >
-                  Disconnect Profile (Sign Out)
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-[11px] font-black uppercase text-slate-400 mb-1.5">Full Name</label>
-                  <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Monika" className="w-full text-xs p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" required />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-black uppercase text-slate-400 mb-1.5">Contact No.</label>
-                  <input type="tel" name="contactNo" value={formData.contactNo} onChange={handleChange} placeholder="+91 XXXXX XXXXX" className="w-full text-xs p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" required />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-black uppercase text-slate-400 mb-1.5">Email Identity</label>
-                  <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="you@example.com" className="w-full text-xs p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" required />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-black uppercase text-slate-400 mb-1.5">Country</label>
-                  <input type="text" name="country" value={formData.country} onChange={handleChange} placeholder="India" className="w-full text-xs p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" required />
-                </div>
-                <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-3 px-4 rounded-xl transition-all shadow-md">
-                  Authenticate Account Profile
-                </button>
-              </form>
-            )}
+          <div className="flex items-center gap-2 mb-6 border-b border-slate-100 dark:border-slate-800 pb-4 mt-2">
+            <span className="text-xl">✉️</span>
+            <h2 className="text-lg font-black uppercase tracking-tight">Contact Us Support Desk</h2>
           </div>
 
-          {/* RIGHT: Live Device Registration History Tracker Logs */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-            <h2 className="text-xl font-black mb-1 uppercase tracking-tight">📜 Device Access Logbook</h2>
-            <p className="text-xs text-slate-400 mb-6 font-medium">Session records executed locally on this terminal setup ({loginHistory.length})</p>
+          <div className="space-y-6">
+            {/* Logged In User Summary Header */}
+            <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+              <div className="h-12 w-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-lg font-black uppercase shrink-0">
+                {currentUser?.name?.charAt(0)}
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-sm font-black text-slate-800 dark:text-white truncate capitalize">{currentUser?.name}</h3>
+                <p className="text-[11px] text-slate-400 truncate font-medium">{currentUser?.email} • {currentUser?.country}</p>
+              </div>
+            </div>
 
-            <div className="flex-1 overflow-y-auto max-h-[380px] space-y-3 pr-1">
-              {loginHistory.length === 0 ? (
-                <p className="text-xs text-slate-400 italic text-center py-12">No profile registrations recorded yet.</p>
-              ) : (
-                loginHistory.map((log) => (
-                  <div key={log.id} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700/50 flex flex-col justify-between text-xs">
-                    <div className="flex justify-between items-start mb-1">
-                      <span className="font-bold text-slate-800 dark:text-slate-200">👤 {log.name}</span>
-                      <span className="text-[10px] text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950 font-bold px-2 py-0.5 rounded-md">📍 {log.country}</span>
-                    </div>
-                    <span className="text-slate-500 dark:text-slate-400 text-[11px]">📞 {log.contactNo} • ✉️ {log.email}</span>
-                    <span className="text-[10px] text-slate-400 mt-2 text-right font-medium">🕒 {log.timestamp}</span>
-                  </div>
-                ))
+            {/* DYNAMIC INTERACTIVE ZONE: Live User Query Submission Box */}
+            <form onSubmit={handleQuerySubmit} className="space-y-3">
+              <label className="block text-xs font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                Submit a Question or Query to Admin:
+              </label>
+              
+              <textarea
+                value={userQuery}
+                onChange={(e) => setUserQuery(e.target.value)}
+                rows="4"
+                className="w-full p-3 text-sm border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium rounded-2xl focus:outline-none focus:border-blue-500 shadow-inner resize-none transition-colors"
+                placeholder="Type your question, request, or support ticket here..."
+              ></textarea>
+
+              {successMessage && (
+                <div className="text-[11px] bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-3 py-2 rounded-xl text-center font-bold uppercase tracking-wide animate-fade-in">
+                  ✅ Success! Your query has been logged securely onto the Admin board.
+                </div>
               )}
+
+              <button 
+                type="submit" 
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-md"
+              >
+                Transmit Query Ticket
+              </button>
+            </form>
+
+            {/* Terminal Termination Node */}
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-4 text-center">
+              <button 
+                onClick={handleLogout} 
+                className="text-[10px] font-black uppercase tracking-wider text-red-500 hover:text-red-600 transition-colors bg-red-50 dark:bg-red-950/20 px-3 py-1.5 rounded-lg"
+              >
+                Sign Out & Lock Workspace Terminal
+              </button>
             </div>
           </div>
 
-        </main>
+        </div>
+
       </div>
       <Footer />
     </div>

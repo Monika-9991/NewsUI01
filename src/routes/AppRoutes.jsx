@@ -1,43 +1,53 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useContext } from "react";
+import { AppContext } from "../context/AppContext";
 import Navbar from "../components/Navbar";
 import Home from "../pages/Home";
 import Category from "../pages/Category";
 import NewsDetails from "../pages/NewsDetails";
 import SearchResults from "../pages/SearchResults";
 import IndiaStateNews from "../pages/IndiaStateNews";
-
-// Import your new Contact Desk & Login screen container element
 import ContactLogin from "../pages/ContactLogin"; 
+import AdminHub from "../pages/AdminHub"; 
+import LoginGate from "../pages/LoginGate"; 
 import NotFound from "../pages/NotFound";
 
 export default function AppRoutes() {
+  const { currentUser } = useContext(AppContext);
+
+  // 🚪 APP ROUTE GUARD SHIELD: If no profile is detected in local storage, lock out everything!
+  if (!currentUser) {
+    return (
+      <Routes>
+        {/* Force catch all URLs and lock them exclusively to the login screen panel layout */}
+        <Route path="/login" element={<LoginGate />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+
+  //  UNLOCKED STATE: Authenticated profiles get full layout access to Navbar and core directories
   return (
     <>
-      {/* 1. Global Navigation Header (Always stays pinned at the top layout boundary) */}
+      {/* Structural layout components render safely now */}
       <Navbar />
       
-      {/* 2. Main Work Content Viewport (Swaps components dynamically based on the active URL string) */}
       <div className="pt-16 min-h-screen flex flex-col">
         <Routes>
-          {/* Main Root: Top Trending Global Headlines Grid view */}
+          {/* Main App Feed Unlocks at the basic root directory path */}
           <Route path="/" element={<Home />} />
-          
-          {/* Standard Desk Categorization (e.g., /category/technology, /category/sports) */}
           <Route path="/category/:name" element={<Category />} />
-          
-          {/* Regional Geo-Location Filtering Node (e.g., /state/punjab, /state/assam) */}
           <Route path="/state/:stateName" element={<IndiaStateNews />} />
-          
-          {/* Deep-Read Article Space Workspace Reader (Accepts encoded Base64 link tags) */}
           <Route path="/news/:id" element={<NewsDetails />} />
-          
-          {/* Global Free-Form Keyword Search Tracker (Parses URL Search Parameters) */}
           <Route path="/search" element={<SearchResults />} />
           
-          {/* NEW: Explicit route registration for Contact Us & Session Authentication Portal */}
+          {/* Dedicated profile review & support workspace card desk */}
           <Route path="/contact" element={<ContactLogin />} /> 
           
-          {/* Wildcard Fallback Rule: Renders when no other URL template matches (404 Error handler) */}
+          {/* Protected Master Console: Only accessible when admin authentication variables compute to true */}
+          <Route path="/admin-control-desk" element={<AdminHub />} /> 
+          
+          {/* Fallback configuration matches */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
